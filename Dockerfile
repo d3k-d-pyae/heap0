@@ -17,4 +17,4 @@ RUN chmod +x /ctf/chall
 
 EXPOSE 8000
 
-CMD ["socat", "TCP-LISTEN:8000,reuseaddr,fork", "EXEC:./chall,pty,stderr,setsid,sigint,sane"]
+CMD ["sh", "-c", "socat TCP-LISTEN:${PORT:-8000},reuseaddr,fork EXEC:./chall,pty,stderr,setsid,sigint,sane"]
