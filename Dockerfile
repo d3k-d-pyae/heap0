@@ -1,18 +1,18 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update && \
     apt-get install -y gcc socat && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /ctf
+WORKDIR /app
 
 COPY chall.c .
+COPY flag.txt .
 
-# Copy flag outside web-exposed path
-COPY flag.txt /flag.txt
-RUN chmod 400 /flag.txt
+RUN gcc chall.c -o chall -no-pie -fno-stack-protector
 
-RUN gcc -fno-stack-protector -no-pie chall.c -o chall
-RUN chmod +x /ctf/chall
+# Expose the port Render will use
+EXPOSE 10000
 
-CMD ["sh", "-c", "socat TCP-LISTEN:$PORT,reuseaddr,fork EXEC:./chall,pty,stderr,setsid,sigint,sane"]
+# Use socat to listen on $PORT and exec the binary
+CMD socat TCP-LISTEN:${PORT:-10000},reuseaddr,fork EXEC:"/app/chall"
