@@ -1,0 +1,34 @@
+name: Deploy TCP Challenge via Cloudflare Tunnel
+
+on: [workflow_dispatch]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y gcc socat curl
+
+      - name: Compile Challenge
+        run: |
+          gcc -fno-stack-protector -no-pie chall.c -o chall
+          chmod 400 flag.txt
+
+      - name: Setup Cloudflare Tunnel
+        run: |
+          curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+          chmod +x cloudflared
+          ./cloudflared tunnel --url tcp://localhost:8000 > url.txt &
+
+      - name: Start Challenge Server
+        run: |
+          echo "Waiting for tunnel to initialize..."
+          sleep 10
+          cat url.txt
+          socat TCP-LISTEN:8000,reuseaddr,fork EXEC:./chall,pty,stderr,setsid,sigint,sane
