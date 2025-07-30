@@ -1,0 +1,36 @@
+name: Deploy Heap0 Challenge
+
+on: [workflow_dispatch]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Install Docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: docker build -t heap0 .
+
+    - name: Install Cloudflared
+      run: |
+        wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+        chmod +x cloudflared-linux-amd64
+        mv cloudflared-linux-amd64 cloudflared
+
+    - name: Save Tunnel Credentials
+      run: |
+        mkdir -p ~/.cloudflared
+        echo '${{ secrets.TUNNEL_CREDENTIALS }}' > ~/.cloudflared/${{ secrets.TUNNEL_ID }}.json
+
+    - name: Run Challenge + Tunnel
+      run: |
+        docker run -d --name heap0 -p 8000:8000 heap0
+        ./cloudflared tunnel --config /dev/null \
+          --no-autoupdate \
+          --cred-file ~/.cloudflared/${{ secrets.TUNNEL_ID }}.json \
+          run ${{ secrets.TUNNEL_NAME }}
