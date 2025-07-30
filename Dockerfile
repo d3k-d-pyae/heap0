@@ -1,18 +1,16 @@
-FROM ubuntu:22.04
+FROM ubuntu:20.04
 
 RUN apt-get update && \
-    apt-get install -y gcc socat && \
-    rm -rf /var/lib/apt/lists/*
+    DEBIAN_FRONTEND=noninteractive apt-get install -y gcc netcat && \
+    useradd -m ctf
 
-WORKDIR /app
+COPY chall.c /home/ctf/chall.c
+COPY flag.txt /flag.txt
 
-COPY chall.c .
-COPY flag.txt .
+WORKDIR /home/ctf
 
 RUN gcc chall.c -o chall -no-pie -fno-stack-protector
 
-# Expose the port Render will use
-EXPOSE 10000
+EXPOSE 8000
 
-# Use socat to listen on $PORT and exec the binary
-CMD socat TCP-LISTEN:${PORT:-10000},reuseaddr,fork EXEC:"/app/chall"
+CMD ["sh", "-c", "nc -lvkp 8000 -e ./chall"]
